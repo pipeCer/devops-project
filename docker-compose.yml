@@ -1,0 +1,40 @@
+version: '3.8'
+
+networks:
+  blacklist_net:
+
+services:
+
+  blacklists:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URI=postgresql://postgres:postgres@db_blacklists:5432/blacklists
+      - FLASK_ENV=local
+    deploy:
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 3
+    networks:
+      - blacklist_net
+    depends_on:
+      db_blacklists:
+        condition: service_healthy
+
+  db_blacklists:
+    image: postgres:12.4-alpine
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: blacklists
+    networks:
+      - blacklist_net
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U postgres" ]
+      interval: 2s
+      timeout: 5s
+      retries: 5
